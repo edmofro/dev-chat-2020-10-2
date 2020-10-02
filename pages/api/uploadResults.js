@@ -1,10 +1,7 @@
 import xlsx from "xlsx";
 import { IncomingForm } from "formidable";
-import {
-  parseDataForTeam,
-  buildScorecardPdf,
-  parseDataForTeam,
-} from "./helpers";
+import fetch from "node-fetch";
+import { parseDataForTeam } from "./helpers";
 
 // first we need to disable the default body parser
 export const config = {
@@ -18,15 +15,19 @@ const BASE_URL = process.env.VERCEL_URL
   : "http://localhost:3000";
 
 async function emailTeamScorecard(dataForTeam, modelAnswers, date) {
-  const { emailAddress, teamName, ...dataForScorecard } = parseDataForTeam(
-    dataForTeam
-  );
-  const filePath = buildScorecardPdf(
-    { teamName, ...dataForScorecard },
-    modelAnswers,
-    date
-  );
-  return emailScorecard({ emailAddress, filePath, teamName, date });
+  const response = await fetch(`${BASE_URL}/api/emailTeamScorecard`, {
+    method: "POST",
+    body: JSON.stringify({
+      dataForTeam,
+      modelAnswers,
+      date,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorMessage = await response.text();
+    throw new Error(errorMessage);
+  }
 }
 
 export default async function uploadResults(req, res) {
